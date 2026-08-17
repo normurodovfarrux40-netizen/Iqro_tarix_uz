@@ -1,1 +1,0 @@
-# Iqro_tarix_uz
