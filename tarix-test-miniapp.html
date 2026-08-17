@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Tarix bilim sinovi</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+  :root{
+    --ink:#1B2A41;
+    --parchment:#F3E9D2;
+    --parchment-dark:#E4D6B2;
+    --bronze:#A67C3D;
+    --bronze-dark:#7A5A26;
+    --wrong:#8C3B2E;
+    --correct:#3F6B4B;
+    --text:#2A2320;
+    --text-muted:#6B5F4F;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--ink);
+    font-family: 'Georgia', 'Times New Roman', serif;
+    color:var(--text);
+    min-height:100vh;
+    display:flex;
+    justify-content:center;
+  }
+  .app{
+    width:100%;
+    max-width:480px;
+    min-height:100vh;
+    background:var(--parchment);
+    background-image:
+      radial-gradient(circle at 20% 20%, rgba(166,124,61,0.06) 0, transparent 40%),
+      radial-gradient(circle at 80% 80%, rgba(166,124,61,0.06) 0, transparent 40%);
+    display:flex;
+    flex-direction:column;
+    padding:20px 18px 32px;
+  }
+  header{
+    text-align:center;
+    padding:10px 0 18px;
+    border-bottom:2px solid var(--bronze);
+    margin-bottom:20px;
+  }
+  header h1{
+    font-size:20px;
+    letter-spacing:0.5px;
+    margin:0 0 4px;
+    color:var(--ink);
+  }
+  header p{
+    margin:0;
+    font-size:13px;
+    color:var(--text-muted);
+    font-style:italic;
+  }
+  .dots{
+    display:flex;
+    gap:7px;
+    justify-content:center;
+    margin-bottom:22px;
+  }
+  .dot{
+    width:9px;height:9px;border-radius:50%;
+    background:var(--parchment-dark);
+    border:1px solid var(--bronze);
+    transition:background .2s;
+  }
+  .dot.done{background:var(--bronze);}
+  .dot.current{background:var(--ink);border-color:var(--ink);}
+  .qnum{
+    font-size:12px;
+    letter-spacing:1.5px;
+    text-transform:uppercase;
+    color:var(--bronze-dark);
+    margin-bottom:6px;
+    text-align:center;
+  }
+  .question{
+    font-size:19px;
+    line-height:1.4;
+    text-align:center;
+    margin:0 0 26px;
+    color:var(--ink);
+    min-height:70px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+  .options{
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+  }
+  .opt{
+    background:#fff;
+    border:1.5px solid var(--parchment-dark);
+    border-radius:10px;
+    padding:14px 16px;
+    font-size:15px;
+    font-family:inherit;
+    color:var(--text);
+    text-align:left;
+    cursor:pointer;
+    transition:all .15s;
+  }
+  .opt:active{transform:scale(0.98);}
+  .opt.correct{
+    background:#E6F0E8;
+    border-color:var(--correct);
+    color:var(--correct);
+    font-weight:bold;
+  }
+  .opt.wrong{
+    background:#F5E4E1;
+    border-color:var(--wrong);
+    color:var(--wrong);
+    font-weight:bold;
+  }
+  .opt:disabled{cursor:default;}
+  .error-msg{
+    color:var(--wrong);
+    font-size:13px;
+    text-align:center;
+    margin-top:10px;
+    display:none;
+  }
+  .result{
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+  }
+  .seal{
+    width:120px;height:120px;
+    border-radius:50%;
+    background:var(--bronze);
+    border:4px double var(--parchment);
+    box-shadow:0 0 0 3px var(--bronze-dark);
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    color:#fff;
+    margin-bottom:22px;
+  }
+  .seal .score{
+    font-size:34px;
+    font-weight:bold;
+    line-height:1;
+  }
+  .seal .max{
+    font-size:13px;
+    opacity:0.9;
+  }
+  .result h2{
+    font-size:20px;
+    margin:0 0 8px;
+    color:var(--ink);
+  }
+  .result p{
+    font-size:14px;
+    color:var(--text-muted);
+    margin:0 0 24px;
+    max-width:320px;
+  }
+  .btn{
+    background:var(--ink);
+    color:var(--parchment);
+    border:none;
+    border-radius:10px;
+    padding:14px 28px;
+    font-size:15px;
+    font-family:inherit;
+    cursor:pointer;
+  }
+  .btn:active{transform:scale(0.97);}
+  .hidden{display:none !important;}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header>
+    <h1>Tarix bilim sinovi</h1>
+    <p id="subtitle">O'zbekiston tarixi bo'yicha test</p>
+  </header>
+
+  <div id="quizScreen">
+    <div class="dots" id="dots"></div>
+    <div class="qnum" id="qnum">1-savol / 5</div>
+    <div class="question" id="questionText"></div>
+    <div class="options" id="options"></div>
+    <div class="error-msg" id="errorMsg">Davom etish uchun javobni tanlang</div>
+  </div>
+
+  <div id="resultScreen" class="result hidden">
+    <div class="seal">
+      <div class="score" id="scoreValue">0</div>
+      <div class="max" id="scoreMax">/ 5</div>
+    </div>
+    <h2 id="resultTitle">Natija tayyor</h2>
+    <p id="resultText">Natijangiz o'qituvchingizga yuborildi.</p>
+    <button class="btn" id="restartBtn">Qayta boshlash</button>
+  </div>
+
+</div>
+
+<script>
+// ====== SAVOLLAR BAZASI (bu yerni o'z faningiz mavzusiga moslab o'zgartiring) ======
+const QUESTIONS = [
+  {
+    q: "Amir Temur qaysi yilda tug'ilgan?",
+    options: ["1336-yil", "1370-yil", "1405-yil", "1299-yil"],
+    correct: 0
+  },
+  {
+    q: "Sohibqiron Amir Temur davlatining poytaxti qaysi shahar bo'lgan?",
+    options: ["Buxoro", "Samarqand", "Xiva", "Marg'ilon"],
+    correct: 1
+  },
+  {
+    q: "Mirzo Ulug'bek qurdirgan mashhur rasadxona qayerda joylashgan?",
+    options: ["Toshkent", "Andijon", "Samarqand", "Shahrisabz"],
+    correct: 2
+  },
+  {
+    q: "O'zbekiston Respublikasi mustaqilligi qachon e'lon qilingan?",
+    options: ["1990-yil 20-iyun", "1991-yil 31-avgust", "1992-yil 8-dekabr", "1989-yil 1-yanvar"],
+    correct: 1
+  },
+  {
+    q: "\"Boburnoma\" asarining muallifi kim?",
+    options: ["Alisher Navoiy", "Zahiriddin Muhammad Bobur", "Mirzo Ulug'bek", "Abu Rayhon Beruniy"],
+    correct: 1
+  }
+];
+// ======================================================================
+
+const tg = window.Telegram ? window.Telegram.WebApp : null;
+if (tg) { tg.ready(); tg.expand(); }
+
+let current = 0;
+let score = 0;
+let answered = false;
+
+const dotsEl = document.getElementById('dots');
+const qnumEl = document.getElementById('qnum');
+const questionEl = document.getElementById('questionText');
+const optionsEl = document.getElementById('options');
+const errorEl = document.getElementById('errorMsg');
+const quizScreen = document.getElementById('quizScreen');
+const resultScreen = document.getElementById('resultScreen');
+
+function buildDots(){
+  dotsEl.innerHTML = '';
+  QUESTIONS.forEach((_, i) => {
+    const d = document.createElement('div');
+    d.className = 'dot';
+    dotsEl.appendChild(d);
+  });
+}
+
+function updateDots(){
+  const dots = dotsEl.querySelectorAll('.dot');
+  dots.forEach((d, i) => {
+    d.classList.remove('done','current');
+    if (i < current) d.classList.add('done');
+    if (i === current) d.classList.add('current');
+  });
+}
+
+function renderQuestion(){
+  answered = false;
+  errorEl.style.display = 'none';
+  const item = QUESTIONS[current];
+  qnumEl.textContent = (current + 1) + '-savol / ' + QUESTIONS.length;
+  questionEl.textContent = item.q;
+  optionsEl.innerHTML = '';
+  item.options.forEach((opt, idx) => {
+    const btn = document.createElement('button');
+    btn.className = 'opt';
+    btn.textContent = opt;
+    btn.addEventListener('click', () => selectOption(idx, btn));
+    optionsEl.appendChild(btn);
+  });
+  updateDots();
+}
+
+function selectOption(idx, btnEl){
+  if (answered) return;
+  answered = true;
+  errorEl.style.display = 'none';
+  const item = QUESTIONS[current];
+  const allBtns = optionsEl.querySelectorAll('.opt');
+  allBtns.forEach(b => b.disabled = true);
+
+  if (idx === item.correct){
+    btnEl.classList.add('correct');
+    score++;
+  } else {
+    btnEl.classList.add('wrong');
+    allBtns[item.correct].classList.add('correct');
+  }
+
+  setTimeout(() => {
+    if (current < QUESTIONS.length - 1){
+      current++;
+      renderQuestion();
+    } else {
+      showResult();
+    }
+  }, 900);
+}
+
+function showResult(){
+  quizScreen.classList.add('hidden');
+  resultScreen.classList.remove('hidden');
+  document.getElementById('scoreValue').textContent = score;
+  document.getElementById('scoreMax').textContent = '/ ' + QUESTIONS.length;
+
+  const pct = Math.round((score / QUESTIONS.length) * 100);
+  let title, text;
+  if (pct >= 80){ title = "A'lo natija!"; text = "Siz mavzuni juda yaxshi o'zlashtirgansiz."; }
+  else if (pct >= 50){ title = "Yaxshi natija"; text = "Ba'zi mavzularni yana bir bor takrorlang."; }
+  else { title = "Mashq davom etsin"; text = "Mavzuni qaytadan o'qib chiqishni tavsiya qilamiz."; }
+  document.getElementById('resultTitle').textContent = title;
+  document.getElementById('resultText').textContent = text;
+
+  // Natijani Telegram bot tomonga jo'natish (bot backendida qayta ishlanadi)
+  if (tg && tg.sendData){
+    const user = tg.initDataUnsafe && tg.initDataUnsafe.user ? tg.initDataUnsafe.user : {};
+    const payload = {
+      user_id: user.id || null,
+      first_name: user.first_name || null,
+      username: user.username || null,
+      score: score,
+      total: QUESTIONS.length,
+      percent: pct,
+      timestamp: new Date().toISOString()
+    };
+    try {
+      tg.sendData(JSON.stringify(payload));
+    } catch(e){ /* browserda test qilinganda tg.sendData ishlamaydi, bu normal */ }
+  }
+}
+
+document.getElementById('restartBtn').addEventListener('click', () => {
+  current = 0; score = 0;
+  resultScreen.classList.add('hidden');
+  quizScreen.classList.remove('hidden');
+  buildDots();
+  renderQuestion();
+});
+
+buildDots();
+renderQuestion();
+</script>
+</body>
+</html>
